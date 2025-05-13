@@ -8,7 +8,7 @@ Firebase.jl is the solution for working with [Firebase](https://firebase.google.
 
 ## Notes:
 >Firebase isn't endorsing this project and hasn't built this project. So use it at your own discretion and risk. 
-
+>This package was almost entirely written by @ashwanirathee, I am just maintaining it so it will continue to work with new julia releases.
 # Installation
 
 Stable Version
