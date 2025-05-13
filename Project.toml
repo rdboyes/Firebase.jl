@@ -1,7 +1,7 @@
 name = "Firebase"
 uuid = "d5d4129f-b518-43ad-8b57-4a757381be86"
-authors = ["Ashwani Rathee <ab669522@gmail.com>"]
-version = "0.0.1"
+authors = ["Ashwani Rathee <ab669522@gmail.com>", "Randall Boyes <randy.boyes@gmail.com>"]
+version = "0.0.2"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
