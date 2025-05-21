@@ -21,7 +21,7 @@ Dev Version
 ```julia
 using Pkg
 # Enter ']' from the REPL to enter Pkg mode.
-pkg> add https://github.com/ashwani-rathee/Firebase.jl.git
+pkg> add https://github.com/rdboyes/Firebase.jl.git
 ```
 
 
