@@ -67,7 +67,10 @@ client_email: ****
 """
 function init(julianparseddict::Dict)
     global CREDENTIALS
-    CREDENTIALS = JSONCredentials(julianparseddict)
+    # credentials need to be in a Dict{Symbol, <:AbstractString} for GoogleCloud.jl
+    CREDENTIALS = JSONCredentials(
+        Dict(Symbol(k) => string(v) for (k, v) in julianparseddict)
+    )
 end
 
 function init(filepath)
