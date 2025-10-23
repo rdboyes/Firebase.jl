@@ -38,7 +38,7 @@ end
 """
     init( julianparseddict::Dict)
 
-Initialize if the sdk key is in Julian dict format and the file is saved as adminsdkkey.json
+Initialize if the sdk key is in Julia dict format.
 
 ## Example
 
@@ -65,17 +65,12 @@ project_id: ****
 client_email: ****
 ````
 """
-function init( julianparseddict::Dict)
+function init(julianparseddict::Dict)
     global CREDENTIALS
-    open("adminsdkkey.json","w") do f 
-        write(f, JSON.json(julianparseddict)) 
-    end
-    CREDENTIALS = JSONCredentials("adminsdkkey.json")
-    println("Project Admin SDK key is adminsdkkey.json now!!")
-    println(CREDENTIALS)
+    CREDENTIALS = JSONCredentials(julianparseddict)
 end
 
-function init( filepath)
+function init(filepath)
     global CREDENTIALS
     CREDENTIALS = JSONCredentials(filepath)
     println("Project Admin SDK key is ", filepath, " now!!")
