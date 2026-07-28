@@ -24,6 +24,11 @@ jobs:
         julia-version: ['1.10', '1']
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
+    env:
+      # The emulator suite is only exercised on one job: Linux, latest Julia. The
+      # other jobs run the unit tests and let the integration tests self-skip.
+      RUN_EMULATOR: ${{ matrix.os == 'ubuntu-latest' && matrix.julia-version == '1' }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -39,17 +44,20 @@ jobs:
       # them the tests self-skip, so these steps are what actually exercises the
       # Firestore/Realtime DB roundtrips in CI.
       - name: Set up Node
+        if: env.RUN_EMULATOR == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Set up Java
+        if: env.RUN_EMULATOR == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Cache Firebase emulator jars
+        if: env.RUN_EMULATOR == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/firebase/emulators
@@ -57,6 +65,7 @@ jobs:
           restore-keys: ${{ runner.os }}-firebase-emulators-
 
       - name: Install the Firebase CLI
+        if: env.RUN_EMULATOR == 'true'
         run: npm install -g firebase-tools
 
       - uses: julia-actions/julia-buildpkg@v1
@@ -64,5 +73,6 @@ jobs:
       - name: Unit test
         uses: julia-actions/julia-runtest@v1
         env:
+          FIREBASE_EMULATOR_AUTOSTART: ${{ env.RUN_EMULATOR }}
           # Cold CI runners download the emulator jars on first use.
           FIREBASE_EMULATOR_TIMEOUT: '300'
