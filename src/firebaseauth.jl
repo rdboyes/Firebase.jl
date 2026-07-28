@@ -21,6 +21,18 @@ using HTTP,JSON
 
 WEB_API_KEY = nothing
 
+# Every Identity Toolkit call is a JSON POST to /accounts:<endpoint>?key=<WEB_API_KEY>.
+# Building the body with JSON.json rather than string interpolation keeps values
+# containing quotes or backslashes from producing malformed JSON, and sets the
+# Content-Type header the API expects.
+function _auth_post(endpoint, payload)
+    header = Dict("Content-Type" => "application/json")
+    url = "$(auth_url())/accounts:$endpoint?key=$WEB_API_KEY"
+    http_response = HTTP.post(url, header, JSON.json(payload))
+    response_string = String(http_response.body)
+    JSON.parse(response_string)
+end
+
 """
 set_webapikey(key ="")
 
@@ -60,11 +72,8 @@ Dict{String, Any} with 6 entries:
 ```
 """
 function firebase_signup(email::String="", password::String="", returnSecureToken::Bool=true)
-    http_response = HTTP.post("$(auth_url())/accounts:signUp?key=$WEB_API_KEY",
-    header="""{Content-Type: application/json}""",
-    body="""{"email": "$email","password":"$password","returnSecureToken":"$returnSecureToken"}""")
-    response_string = String(http_response.body)
-    JSON.parse(response_string)
+    _auth_post("signUp", Dict("email" => email, "password" => password,
+                              "returnSecureToken" => returnSecureToken))
 end
 
 """
@@ -92,11 +101,8 @@ Dict{String, Any} with 8 entries:
 ```
 """
 function firebase_signin(email::String="", password::String="", returnSecureToken::Bool=true)
-  http_response = HTTP.post("$(auth_url())/accounts:signInWithPassword?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"email": "$email","password":"$password","returnSecureToken":"$returnSecureToken"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("signInWithPassword", Dict("email" => email, "password" => password,
+                                        "returnSecureToken" => returnSecureToken))
 end
 
 
@@ -123,11 +129,7 @@ Dict{String, Any} with 5 entries:
 
 """
 function firebase_signinanon(returnSecureToken::Bool=true)
-  http_response = HTTP.post("$(auth_url())/accounts:signUp?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"returnSecureToken":"$returnSecureToken"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("signUp", Dict("returnSecureToken" => returnSecureToken))
 end
 
 GOOGLE_ID_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRjNGQwMGJjM2NiZWE4YjU0NTMzMWQxZjFjOTZmZDRlNjdjNTFlODkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmlyLWpsLTQ1N2ViIiwiYXVkIjoiZmlyLWpsLTQ1N2ViIiwiYXV0aF90aW1lIjoxNjIzOTQwMzIwLCJ1c2VyX2lkIjoiemdySTRnM3VhbFZKVzdJRWlSbFBGZzVqSXRBMiIsInN1YiI6Inpnckk0ZzN1YWxWSlc3SUVpUmxQRmc1akl0QTIiLCJpYXQiOjE2MjM5NDAzMjAsImV4cCI6MTYyMzk0MzkyMCwiZW1haWwiOiJhc2h3YW5pMUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYXNod2FuaTFAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.uDT2BFPXlJWXzartwx8t8iBwriZc3PTpwJ3_5biOTI8H9sHU4w46E-XwUvW45Qip0_2Cmf6JZjbfkAZhGHnzIl6b9C3j2iJ0nXY_tvr0cC8otGPp01J8vBSZCu24tI0BdPaymXrFek4ouGmnbFCdxO2D3eeB59ZVsJCm9JWzGjSlrO5m0KMIOhYAV5aq6BaT32AzkPZJDXWTjc3nEXrxF-5n8Nehek_QbxROh7pwJHqDul5xswlDYGqHAx3d2jrcrSehGhfetHfPx9IYOPttAT0mSeROz3Lgy9cLmfO5HvAZMNoJs0gif7ffr773TJMkbELEc-gyBFETnoY87LPvuA"
@@ -147,12 +149,12 @@ firebase_signinoauth()
 ```
 
 """
-function firebase_signinoauth()
-  http_response = HTTP.post("$(auth_url())/accounts:signInWithIdp?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"postBody":"{id_token=$GOOGLE_ID_TOKEN&providerId=[google.com]","requestUri":"http://localhost","returnIdpCredential":true,"returnSecureToken":true}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+function firebase_signinoauth(id_token=GOOGLE_ID_TOKEN, provider="google.com")
+  _auth_post("signInWithIdp",
+             Dict("postBody" => "id_token=$id_token&providerId=$provider",
+                  "requestUri" => "http://localhost",
+                  "returnIdpCredential" => true,
+                  "returnSecureToken" => true))
 end
 
 """
@@ -177,11 +179,8 @@ Dict{String, Any} with 5 entries:
 ```
 """
 function firebase_fetchproviders(email="ab669522@gmail.com")
-  http_response = HTTP.post("$(auth_url())/accounts:createAuthUri?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"identifier":"$email","continueUri":"http://localhost:8080/app"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("createAuthUri", Dict("identifier" => email,
+                                   "continueUri" => "http://localhost:8080/app"))
 end
 
 """
@@ -199,11 +198,7 @@ firebase_passwordreset(email="ab669522@gmail.com")
 ```
 """
 function firebase_passwordreset(email="ab669522@gmail.com")
-  http_response = HTTP.post("$(auth_url())/accounts:sendOobCode?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"requestType":"PASSWORD_RESET","email":"$email"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("sendOobCode", Dict("requestType" => "PASSWORD_RESET", "email" => email))
 end
 
 """
@@ -219,24 +214,19 @@ HTTP POST request to the Auth resetPassword endpoint.
 
 ```
 """
-function verify_passwordresetcode()
-  http_response = HTTP.post("$(auth_url())/accounts:resetPassword?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"oobCode":"[PASSWORD_RESET_CODE]"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+function verify_passwordresetcode(oobcode="")
+  _auth_post("resetPassword", Dict("oobCode" => oobcode))
 end
 
 
 """
+confirm_passwordreset(oobcode="", newpassword="")
 
+Confirm a password reset. Applies `newpassword` to the account identified by the
+out-of-band code from the reset email.
 """
-function confirm_passwordreset()
-  http_response = HTTP.post("$(auth_url())/accounts:resetPassword?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"oobCode":"[PASSWORD_RESET_CODE]","newPassword":"[NEW_PASSWORD]"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+function confirm_passwordreset(oobcode="", newpassword="")
+  _auth_post("resetPassword", Dict("oobCode" => oobcode, "newPassword" => newpassword))
 end
 
 FIREBASE_ID_TOKEN = nothing
@@ -258,11 +248,8 @@ firebase_changeemail("ab669522@gmail.com",data["idToken"])
 
 """
 function firebase_changeemail(newemail="", firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token","email":"$newemail","returnSecureToken":true}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("update", Dict("idToken" => firebase_id_token, "email" => newemail,
+                            "returnSecureToken" => true))
 end
 
 """
@@ -282,11 +269,8 @@ firebase_changepassword("helloworld!!",data["idToken"])
 
 """
 function firebase_changepassword(newpassword="", firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token","password":"$newpassword","returnSecureToken":true}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("update", Dict("idToken" => firebase_id_token, "password" => newpassword,
+                            "returnSecureToken" => true))
 end
 
 """
@@ -314,11 +298,8 @@ Dict{String, Any} with 8 entries:
   ```
 """
 function firebase_updateprofile(displayname="",photourl="",firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token","displayName":"$displayname","photoUrl":"$photourl","returnSecureToken":true}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("update", Dict("idToken" => firebase_id_token, "displayName" => displayname,
+                            "photoUrl" => photourl, "returnSecureToken" => true))
 end
 
 """
@@ -333,11 +314,7 @@ firebase_getuserinfo(data["idToken"])
 ```
 """
 function firebase_getuserinfo(firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:lookup?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("lookup", Dict("idToken" => firebase_id_token))
 end
 
 
@@ -356,11 +333,8 @@ firebase_linkuserinfo("ab669522@gmail.com","helloworld!!",data["idToken"])
 ```
 """
 function firebase_linkuserinfo(email::String="", password::String="",firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token","email":"$email","password":"$password","returnSecureToken":true}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("update", Dict("idToken" => firebase_id_token, "email" => email,
+                            "password" => password, "returnSecureToken" => true))
 end
 
 
@@ -407,11 +381,10 @@ Dict{String, Any} with 6 entries:
 ```
 """
 function firebase_unlinkprovide(firebase_id_token=FIREBASE_ID_TOKEN, providerdelete="google.com")
-  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token","deleteProvider":["[$providerdelete]"]}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  # deleteProvider is a list of provider ids; the id must not be wrapped in brackets.
+  providers = providerdelete isa AbstractString ? [providerdelete] : providerdelete
+  _auth_post("update", Dict("idToken" => firebase_id_token,
+                            "deleteProvider" => providers))
 end
 
 """
@@ -427,23 +400,17 @@ firebase_verifyemail((data["idToken"])
 ```
 """
 function firebase_verifyemail(firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:sendOobCode?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"requestType":"VERIFY_EMAIL","idToken":"$firebase_id_token"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("sendOobCode", Dict("requestType" => "VERIFY_EMAIL",
+                                 "idToken" => firebase_id_token))
 end
 
-test = "1dArHTOb-Xpb6QWO7f-SVjb4yRRXMmxGB87iMy_oAtMAAAF6GtCHig"
 """
-TODO: This does work yet
+firebase_confirmemailverify(verification_code="")
+
+Confirm email verification using the out-of-band code from the verification email.
 """
 function firebase_confirmemailverify(verification_code="")
-  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"oobCode":"$verification_code"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("update", Dict("oobCode" => verification_code))
 end
 
 """
@@ -460,10 +427,6 @@ firebase_deleteuser(data["idToken"])
 ```
 """
 function firebase_deleteuser(firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("$(auth_url())/accounts:delete?key=$WEB_API_KEY",
-  header="""{Content-Type: application/json}""",
-  body="""{"idToken":"$firebase_id_token"}""")
-  response_string = String(http_response.body)
-  JSON.parse(response_string)
+  _auth_post("delete", Dict("idToken" => firebase_id_token))
 end
 

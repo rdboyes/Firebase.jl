@@ -1,0 +1,10 @@
+// Emulator-only rules: wide open so the integration tests need no credentials.
+// Never deploy this file to a live project.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

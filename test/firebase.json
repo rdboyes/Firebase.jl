@@ -5,6 +5,9 @@
   "database": {
     "rules": "database.rules.json"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "emulators": {
     "singleProjectMode": true,
     "ui": { "enabled": false },
@@ -12,6 +15,7 @@
     "logging": { "host": "127.0.0.1", "port": 4500 },
     "firestore": { "host": "127.0.0.1", "port": 8080 },
     "database": { "host": "127.0.0.1", "port": 9000 },
-    "auth": { "host": "127.0.0.1", "port": 9099 }
+    "auth": { "host": "127.0.0.1", "port": 9099 },
+    "storage": { "host": "127.0.0.1", "port": 9199 }
   }
 }

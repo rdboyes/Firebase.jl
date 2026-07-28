@@ -20,11 +20,12 @@ const PROJECT_ID  = "demo-firebase"
 const HOST        = "127.0.0.1"
 
 # Must match the ports in firebase.json.
-const PORTS = (firestore = 8080, database = 9000, auth = 9099)
+const PORTS = (firestore = 8080, database = 9000, auth = 9099, storage = 9199)
 
 const ENV_VARS = (firestore = "FIRESTORE_EMULATOR_HOST",
                   database  = "FIREBASE_DATABASE_EMULATOR_HOST",
-                  auth      = "FIREBASE_AUTH_EMULATOR_HOST")
+                  auth      = "FIREBASE_AUTH_EMULATOR_HOST",
+                  storage   = "FIREBASE_STORAGE_EMULATOR_HOST")
 
 """
     port_open(host, port) -> Bool
@@ -48,8 +49,8 @@ open_services() = [k for k in keys(PORTS) if port_open(HOST, PORTS[k])]
 # The Firebase CLI ships as a batch shim on Windows, which CreateProcess cannot
 # launch directly, so go through cmd.exe there.
 emulator_cmd() = Sys.iswindows() ?
-    `cmd /c firebase emulators:start --project $PROJECT_ID --config $CONFIG --only firestore,database,auth` :
-    `firebase emulators:start --project $PROJECT_ID --config $CONFIG --only firestore,database,auth`
+    `cmd /c firebase emulators:start --project $PROJECT_ID --config $CONFIG --only firestore,database,auth,storage` :
+    `firebase emulators:start --project $PROJECT_ID --config $CONFIG --only firestore,database,auth,storage`
 
 function cli_available()
     try

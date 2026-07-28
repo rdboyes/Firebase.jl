@@ -82,5 +82,11 @@ export cloudstore_init
 export cloudstore_get
 export cloudstore_sendfile
 
+# Cloud Storage bucket management
+export cloudstore_addfirebase
+export cloudstore_getbucket
+export cloudstore_listbuckets
+export cloudstore_removefirebase
+
 
 end # module

@@ -65,7 +65,10 @@ function get_request(url::String)
     JSON.parse(response_string)
 end
 
-body = Dict(
+# Each request builder below has its own default body. They must be distinct names:
+# a default argument is evaluated at call time, so several functions defaulting to a
+# shared global `body` would all pick up whichever value was assigned last.
+_BATCHGET_BODY = Dict(
     "newTransaction" => Dict(),
     # "transaction" => "",
     # "readTime" => "",
@@ -96,7 +99,7 @@ init("[FIREBASE_ADMIN_SDK].json")
 res = firestore_batchget()
 ```
 """
-function firestore_batchget(batch=body)
+function firestore_batchget(batch=_BATCHGET_BODY)
     header = Dict(auth_header())
     project_id = projectid()
     println(batch)
@@ -114,7 +117,7 @@ function firestore_batchget(batch=body)
 end
 
 
-body = Dict(
+_BATCHWRITE_BODY = Dict(
     "writes" => [
         Dict(
             "update" => Dict(
@@ -136,9 +139,7 @@ body = Dict(
             )
         )
     ],
-    "labels" => Dict(
-        string => "ABC"
-    )
+    "labels" => Dict{String,String}()
 )
 
 # study types of writes from here https://firebase.google.com/docs/firestore/reference/rest/v1/Write
@@ -163,7 +164,7 @@ init("[FIREBASE_ADMIN_SDK].json")
 res = firestore_batchwrite()
 ```
 """
-function firestore_batchwrite(batch=body)
+function firestore_batchwrite(batch=_BATCHWRITE_BODY)
     header = Dict(auth_header())
     project_id = projectid()
     println(batch)
@@ -180,7 +181,7 @@ function firestore_batchwrite(batch=body)
     JSON.parse(response_string)
 end
 
-body = Dict(
+_BEGINTRANSACTION_BODY = Dict(
     "options" => Dict(
 
     )
@@ -217,7 +218,7 @@ function firestore_beginTransaction()
     JSON.parse(response_string)
 end
 
-body = Dict(
+_COMMIT_BODY = Dict(
     "writes" => [
         Dict(
             "update" => Dict(
@@ -239,8 +240,6 @@ body = Dict(
             )
         )
     ],
-
-    "transaction" => "EZTktxl/jJ9GIlkA3ModskgtczlV2HUqlqGQbh6U8YClsJvU07MTX5/8q0Fhd3hAvi0aSvm4NLF2H8FNiEzspxJLVM4NOZVDsClQgpuLqwkA9uFrQM81VXxzYzGLLvU0hssZZg=="
 )
 
 # commits a particular transaction that was started or is happening 
@@ -257,11 +256,14 @@ data = firestore_beginTransaction()
 firestore_commit(data["transaction"])
 ```
 """
-function firestore_commit(transactionid="", body=body)
+function firestore_commit(transactionid="", body=_COMMIT_BODY)
     header = Dict(auth_header())
     project_id = projectid()
-    body["transaction"] = transactionid
-    body = JSON.json(body)
+    # Copy rather than mutate: `body` may be the shared default, or a caller's dict
+    # too narrowly typed to hold the transaction id.
+    payload = Dict{String,Any}(body)
+    payload["transaction"] = transactionid
+    body = JSON.json(payload)
     println("Body:", body)
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:commit"
     http_response =  HTTP.request(
@@ -284,7 +286,7 @@ end
 #         }
 #       }
 #       """
-body = Dict(
+_CREATEDOC_BODY = Dict(
     "fields" => Dict(
         "test" => Dict(
             "stringValue" => "1"
@@ -308,7 +310,7 @@ firestore_createdoc("/firebase_test/firebase_post/two")
 firestore_createdoc("/firebase_test/firebase_post/three";query ="hello") # with document id name in query
 ```
 """
-function firestore_createdoc(url, body=body;query=query)
+function firestore_createdoc(url, body=_CREATEDOC_BODY; query="")
     header = Dict(auth_header())
     project_id = projectid()
     body = JSON.json(body)
@@ -414,7 +416,7 @@ end
 
 
 # Doesn't work really
-body = Dict(
+_PARTITIONQUERY_BODY = Dict(
     "partitionCount" => "1",
     "pageToken" => "",
     "pageSize" => 300,
@@ -437,7 +439,7 @@ Partitions a query by returning partition cursors that can be used
 to run the query in parallel. The returned partition cursors are 
 split points that can be used by documents.runQuery as starting/end points for the query results.
 """
-function firestore_partitionquery(url, body=body)
+function firestore_partitionquery(url, body=_PARTITIONQUERY_BODY)
     header = Dict(auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:partitionQuery"
@@ -455,7 +457,7 @@ end
 
 
 
-body = Dict(
+_PATCH_BODY = Dict(
     "fields" => Dict(
         "test1" => Dict(
             "stringValue" => "1"
@@ -477,7 +479,7 @@ init("[FIREBASE_ADMIN_SDK].json")
 firestore_patch("/firebase_test/firebase_patch")
 ```
 """
-function firestore_patch(url, body=body)
+function firestore_patch(url, body=_PATCH_BODY)
     header = Dict(auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
@@ -516,13 +518,14 @@ If successful, the response body will be empty.
 
 """
 
-body = Dict("transaction" => "")
-function firestore_rollback(transactionid, body=body)
+_ROLLBACK_BODY = Dict("transaction" => "")
+function firestore_rollback(transactionid, body=_ROLLBACK_BODY)
     header = Dict(auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:rollback"
-    body["transaction"] = transactionid
-    body = JSON.json(body)
+    payload = Dict{String,Any}(body)
+    payload["transaction"] = transactionid
+    body = JSON.json(payload)
     println("Body:", body)
 
     http_response = HTTP.post(
@@ -536,7 +539,7 @@ function firestore_rollback(transactionid, body=body)
 
 end
 
-body = Dict(
+_RUNQUERY_SELECT_BODY = Dict(
     "newTransaction" => Dict(),
     "structuredQuery" => Dict(
         "select" => Dict(
@@ -549,7 +552,7 @@ body = Dict(
     )
 )
 
-body = Dict(
+_RUNQUERY_BODY = Dict(
     "newTransaction" => Dict(),
     "structuredQuery" => Dict(
         "where" => Dict(
@@ -575,7 +578,7 @@ init("[FIREBASE_ADMIN_SDK].json")
 firestore_runquery("/firebase_test/firebase_post")
 ```
 """
-function firestore_runquery(url, body=body)
+function firestore_runquery(url, body=_RUNQUERY_BODY)
     header = Dict(auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:runQuery"
