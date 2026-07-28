@@ -13,7 +13,7 @@
 #     returnSecureToken: true
 # }
 # """
-# HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAEeSloxz3EtXTm73EdSIWY_WRVPF51hhI",header,body)
+# HTTP.post("$(auth_url())/accounts:signUp?key=AIzaSyAEeSloxz3EtXTm73EdSIWY_WRVPF51hhI",header,body)
 using HTTP,JSON
 
 
@@ -60,7 +60,7 @@ Dict{String, Any} with 6 entries:
 ```
 """
 function firebase_signup(email::String="", password::String="", returnSecureToken::Bool=true)
-    http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$WEB_API_KEY",
+    http_response = HTTP.post("$(auth_url())/accounts:signUp?key=$WEB_API_KEY",
     header="""{Content-Type: application/json}""",
     body="""{"email": "$email","password":"$password","returnSecureToken":"$returnSecureToken"}""")
     response_string = String(http_response.body)
@@ -92,7 +92,7 @@ Dict{String, Any} with 8 entries:
 ```
 """
 function firebase_signin(email::String="", password::String="", returnSecureToken::Bool=true)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:signInWithPassword?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"email": "$email","password":"$password","returnSecureToken":"$returnSecureToken"}""")
   response_string = String(http_response.body)
@@ -123,7 +123,7 @@ Dict{String, Any} with 5 entries:
 
 """
 function firebase_signinanon(returnSecureToken::Bool=true)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:signUp?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"returnSecureToken":"$returnSecureToken"}""")
   response_string = String(http_response.body)
@@ -148,7 +148,7 @@ firebase_signinoauth()
 
 """
 function firebase_signinoauth()
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:signInWithIdp?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"postBody":"{id_token=$GOOGLE_ID_TOKEN&providerId=[google.com]","requestUri":"http://localhost","returnIdpCredential":true,"returnSecureToken":true}""")
   response_string = String(http_response.body)
@@ -177,7 +177,7 @@ Dict{String, Any} with 5 entries:
 ```
 """
 function firebase_fetchproviders(email="ab669522@gmail.com")
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:createAuthUri?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"identifier":"$email","continueUri":"http://localhost:8080/app"}""")
   response_string = String(http_response.body)
@@ -199,7 +199,7 @@ firebase_passwordreset(email="ab669522@gmail.com")
 ```
 """
 function firebase_passwordreset(email="ab669522@gmail.com")
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:sendOobCode?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"requestType":"PASSWORD_RESET","email":"$email"}""")
   response_string = String(http_response.body)
@@ -220,7 +220,7 @@ HTTP POST request to the Auth resetPassword endpoint.
 ```
 """
 function verify_passwordresetcode()
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:resetPassword?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"oobCode":"[PASSWORD_RESET_CODE]"}""")
   response_string = String(http_response.body)
@@ -232,7 +232,7 @@ end
 
 """
 function confirm_passwordreset()
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:resetPassword?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"oobCode":"[PASSWORD_RESET_CODE]","newPassword":"[NEW_PASSWORD]"}""")
   response_string = String(http_response.body)
@@ -258,7 +258,7 @@ firebase_changeemail("ab669522@gmail.com",data["idToken"])
 
 """
 function firebase_changeemail(newemail="", firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:update?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token","email":"$newemail","returnSecureToken":true}""")
   response_string = String(http_response.body)
@@ -282,7 +282,7 @@ firebase_changepassword("helloworld!!",data["idToken"])
 
 """
 function firebase_changepassword(newpassword="", firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:update?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token","password":"$newpassword","returnSecureToken":true}""")
   response_string = String(http_response.body)
@@ -314,7 +314,7 @@ Dict{String, Any} with 8 entries:
   ```
 """
 function firebase_updateprofile(displayname="",photourl="",firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:update?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token","displayName":"$displayname","photoUrl":"$photourl","returnSecureToken":true}""")
   response_string = String(http_response.body)
@@ -333,7 +333,7 @@ firebase_getuserinfo(data["idToken"])
 ```
 """
 function firebase_getuserinfo(firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:lookup?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token"}""")
   response_string = String(http_response.body)
@@ -356,7 +356,7 @@ firebase_linkuserinfo("ab669522@gmail.com","helloworld!!",data["idToken"])
 ```
 """
 function firebase_linkuserinfo(email::String="", password::String="",firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:update?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token","email":"$email","password":"$password","returnSecureToken":true}""")
   response_string = String(http_response.body)
@@ -407,7 +407,7 @@ Dict{String, Any} with 6 entries:
 ```
 """
 function firebase_unlinkprovide(firebase_id_token=FIREBASE_ID_TOKEN, providerdelete="google.com")
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:update?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token","deleteProvider":["[$providerdelete]"]}""")
   response_string = String(http_response.body)
@@ -427,7 +427,7 @@ firebase_verifyemail((data["idToken"])
 ```
 """
 function firebase_verifyemail(firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:sendOobCode?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"requestType":"VERIFY_EMAIL","idToken":"$firebase_id_token"}""")
   response_string = String(http_response.body)
@@ -439,7 +439,7 @@ test = "1dArHTOb-Xpb6QWO7f-SVjb4yRRXMmxGB87iMy_oAtMAAAF6GtCHig"
 TODO: This does work yet
 """
 function firebase_confirmemailverify(verification_code="")
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:update?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:update?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"oobCode":"$verification_code"}""")
   response_string = String(http_response.body)
@@ -460,7 +460,7 @@ firebase_deleteuser(data["idToken"])
 ```
 """
 function firebase_deleteuser(firebase_id_token=FIREBASE_ID_TOKEN)
-  http_response = HTTP.post("https://identitytoolkit.googleapis.com/v1/accounts:delete?key=$WEB_API_KEY",
+  http_response = HTTP.post("$(auth_url())/accounts:delete?key=$WEB_API_KEY",
   header="""{Content-Type: application/json}""",
   body="""{"idToken":"$firebase_id_token"}""")
   response_string = String(http_response.body)

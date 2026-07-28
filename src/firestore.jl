@@ -2,7 +2,7 @@
 
 function get_singlepage(documentpath; pagesize=300, pagetoken::String="")
     @show "Firestore.get_singlepage", documentpath, pagesize, pagetoken
-    base_url = FIRESTORE_URL
+    base_url = firestore_url()
     headers = Dict(auth_header())
     project_id = projectid()
     firestore_path = "/projects/$project_id/databases/(default)/documents"
@@ -58,7 +58,7 @@ res = get_request("/firebase_test/firebase_get/firebase_get_collection") # colle
 function get_request(url::String)
     header = Dict(auth_header())
     project_id = projectid()
-    url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url"
+    url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
     println(url)
     http_response = HTTP.get(url, header)
     response_string = String(http_response.body)
@@ -102,7 +102,7 @@ function firestore_batchget(batch=body)
     println(batch)
     body = JSON.json(batch)
     println("Batch:", body)
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents:batchGet"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:batchGet"
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -169,7 +169,7 @@ function firestore_batchwrite(batch=body)
     println(batch)
     body = JSON.json(batch)
     println("Batch:", body)
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents:batchWrite"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:batchWrite"
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -206,7 +206,7 @@ function firestore_beginTransaction()
     # println(batch)
     # body = JSON.json(batch)
     # println("Batch:", body)
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents:beginTransaction"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:beginTransaction"
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -263,7 +263,7 @@ function firestore_commit(transactionid="", body=body)
     body["transaction"] = transactionid
     body = JSON.json(body)
     println("Body:", body)
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents:commit"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:commit"
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -317,7 +317,7 @@ function firestore_createdoc(url, body=body;query=query)
     # mask part doesn't work yet
         # query = JSON.json(query)
         # println(query)
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
     http_response = HTTP.post(
         final_url,
         header,
@@ -345,7 +345,7 @@ firestore_deletedoc("/firebase_test/firebase_post/three/hello")
 function firestore_deletedoc(url)
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url?currentDocument.exists=true"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url?currentDocument.exists=true"
     http_response = HTTP.delete(
         final_url,
         header,
@@ -369,7 +369,7 @@ firestore_getdoclist("/firebase_test")
 function firestore_getdoclist(url)
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
     http_response =  HTTP.get(
         final_url,
         header,
@@ -394,7 +394,7 @@ firestore_getcollectionids("/firebase_test/firebase_post")
 function firestore_getcollectionids(url;query="")
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url:listCollectionIds"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:listCollectionIds"
     pagesize = 300
     pagetoken = ""
     if !isempty(pagetoken)
@@ -440,7 +440,7 @@ split points that can be used by documents.runQuery as starting/end points for t
 function firestore_partitionquery(url, body=body)
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url:partitionQuery"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:partitionQuery"
     body = JSON.json(body)
     println("Body:", body)
     http_response = HTTP.post(
@@ -480,7 +480,7 @@ firestore_patch("/firebase_test/firebase_patch")
 function firestore_patch(url, body=body)
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
     body = JSON.json(body)
     println("Body:", body)
     # query = Dict{String,Any}("documentId" => query)
@@ -520,7 +520,7 @@ body = Dict("transaction" => "")
 function firestore_rollback(transactionid, body=body)
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents:rollback"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:rollback"
     body["transaction"] = transactionid
     body = JSON.json(body)
     println("Body:", body)
@@ -578,7 +578,7 @@ firestore_runquery("/firebase_test/firebase_post")
 function firestore_runquery(url, body=body)
     header = Dict(auth_header())
     project_id = projectid()
-    final_url = "$(FIRESTORE_URL)/projects/$project_id/databases/(default)/documents$url:runQuery"
+    final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:runQuery"
     body = JSON.json(body)
     println("Body:", body)
     println("FINAL_URL:", final_url)

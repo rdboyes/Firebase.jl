@@ -3,7 +3,11 @@ using Glob
 using REPL
 using REPL.TerminalMenus
 
-const FIRESTORE_URL = "https://firestore.googleapis.com/v1"
+# Loaded service-account credentials, or `nothing` when running against the
+# emulator (which needs no real OAuth token). The Firestore base URL is resolved
+# per-call by `firestore_url()` (see emulator.jl) so it can switch between live and
+# emulator hosts at runtime.
+CREDENTIALS = nothing
 
 """
     initparsedjson( parsedjson)
@@ -100,7 +104,12 @@ end
 
 function projectid()
     global CREDENTIALS
-    isnothing(CREDENTIALS) && throw("Run Firebase.init() to load credentials first")
+    # In emulator mode we may have no real credentials; fall back to the configured
+    # emulator project id.
+    if isnothing(CREDENTIALS)
+        !isnothing(EMULATOR_PROJECT_ID) && return EMULATOR_PROJECT_ID
+        throw("Run Firebase.init() to load credentials first")
+    end
     CREDENTIALS.project_id
 end
 
@@ -112,6 +121,11 @@ function get_token()
 end
 
 function auth_header()
+    # The Firestore/Storage emulators accept a fixed owner token and issue no real
+    # OAuth, so skip the GoogleCloud round-trip entirely when the emulator is active.
+    if emulator_active(:firestore) || emulator_active(:storage)
+        return "Authorization" => "Bearer owner"
+    end
     println(CREDENTIALS)
     token = get_token()
     "Authorization" => "$(token[:token_type]) $(token[:access_token])"

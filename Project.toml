@@ -1,7 +1,7 @@
 name = "Firebase"
 uuid = "d5d4129f-b518-43ad-8b57-4a757381be86"
 authors = ["Ashwani Rathee <ab669522@gmail.com>", "Randall Boyes <randy.boyes@gmail.com>"]
-version = "0.1.0"
+version = "0.3.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -11,6 +11,7 @@ GoogleCloud = "55e21f81-8b0a-565e-b5ad-6816892a5ee7"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
@@ -21,5 +22,6 @@ GoogleCloud = "0.11"
 HTTP = "1.10"
 JSON = "0.21, 1"
 REPL = "1.10"
+Sockets = "1.10"
 Test = "1.10"
 julia = "1.10"

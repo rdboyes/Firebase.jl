@@ -43,6 +43,7 @@ function realdb_get(url, authheader = ""; query = Dict())
     final_url = "$BASE_URL$url.json"
     println("FINAL URL:", final_url)
     query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
+    emulator_active(:database) && (query["ns"] = database_ns())
     res = HTTP.get(final_url, authheader; query = query)
     if res.status == 200
         println("GET successful")
@@ -86,6 +87,7 @@ function realdb_post(url, authheader = "", body = Dict("name" => "real_db_test")
     body = JSON.json(body)
     println("Body:", body)
     query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
+    emulator_active(:database) && (query["ns"] = database_ns())
     res = HTTP.post(final_url, authheader, body; query = query)
     if res.status == 200
         println("POST successful")
@@ -114,6 +116,7 @@ function realdb_patch(url, authheader = "", body = Dict("name" => "real_db_test"
     final_url = "$BASE_URL$url.json"
     println("FINAL URL:", final_url)
     query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
+    emulator_active(:database) && (query["ns"] = database_ns())
     body = JSON.json(body)
     println("Body:", body)
     res = HTTP.patch(final_url, authheader, body; query = query)
@@ -142,6 +145,7 @@ function realdb_delete(url, authheader = "", body = Dict("name" => "real_db_test
     final_url = "$BASE_URL$url.json"
     println("FINAL URL:", final_url)
     query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
+    emulator_active(:database) && (query["ns"] = database_ns())
     body = JSON.json(body)
     println("Body:", body)
     res = HTTP.delete(final_url, authheader, body; query = query)
@@ -172,6 +176,7 @@ function realdb_put(url, authheader = "", body = Dict("name" => "real_db_test");
     final_url = "$BASE_URL$url.json"
     println("FINAL URL:", final_url)
     query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
+    emulator_active(:database) && (query["ns"] = database_ns())
     body = JSON.json(body)
     println("Body:", body)
     res = HTTP.put(final_url, authheader, body; query = query)
@@ -200,6 +205,7 @@ function readdb_download(url, authheader = "", filename = "test"; query = Dict()
     final_url = "$BASE_URL$url.json?download=$filename.txt"
     println("FINAL URL:", final_url)
     query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
+    emulator_active(:database) && (query["ns"] = database_ns())
     res = HTTP.get(final_url, authheader; query = query)
     if res.status == 200
         println("GET successful")

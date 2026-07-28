@@ -1,6 +1,7 @@
 module Firebase
 
 # Includes
+include("emulator.jl")
 include("firestore.jl")
 include("firestore-token.jl")
 include("firebaseauth.jl")
@@ -13,6 +14,12 @@ using HTTP
 using GoogleCloud
 using JSON
 using Glob
+
+# Emulator configuration
+export use_emulator
+export use_production
+export emulator_active
+export emulator_running
 
 # Utils
 export get
