@@ -1,42 +1,68 @@
 name: Unit test
 
 on:
-  create:
-    tags:
   push:
     branches:
-      - master
+      - main
+    tags: ['*']
   pull_request:
   schedule:
     - cron: '20 00 1 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
+    name: Julia ${{ matrix.julia-version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        julia-version: ['1.4', '1.5', '1.6']
+        julia-version: ['1.10', '1']
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-      - uses: actions/checkout@v1.0.0
-      - name: "Set up Julia"
-        uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
 
-      - name: Cache artifacts
-        uses: actions/cache@v1
-        env:
-          cache-name: cache-artifacts
+      - uses: julia-actions/cache@v2
+
+      # The integration tests start the Firebase Emulator Suite themselves (see
+      # test/emulator_process.jl). That needs the Firebase CLI and a JDK; without
+      # them the tests self-skip, so these steps are what actually exercises the
+      # Firestore/Realtime DB roundtrips in CI.
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          path: ~/.julia/artifacts 
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-test-${{ env.cache-name }}-
-            ${{ runner.os }}-test-
-            ${{ runner.os }}-
-      - name: "Unit Test"
-        env: 
-            CREDENTIALS: ${{ secrets.FIREBASE_KEY }}
-        uses: julia-actions/julia-runtest@master
+          node-version: '20'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Firebase emulator jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('test/firebase.json') }}
+          restore-keys: ${{ runner.os }}-firebase-emulators-
+
+      - name: Install the Firebase CLI
+        run: npm install -g firebase-tools
+
+      - uses: julia-actions/julia-buildpkg@v1
+
+      - name: Unit test
+        uses: julia-actions/julia-runtest@v1
+        env:
+          # Cold CI runners download the emulator jars on first use.
+          FIREBASE_EMULATOR_TIMEOUT: '300'

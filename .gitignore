@@ -27,3 +27,10 @@ Manifest.toml
 src/study.jl
 src/study2.jl
 firebase/
+
+# Debug logs the Firebase Emulator Suite writes into the working directory
+firestore-debug.log
+database-debug.log
+ui-debug.log
+firebase-debug.log
+pubsub-debug.log

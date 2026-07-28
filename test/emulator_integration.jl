@@ -1,13 +1,18 @@
 # Integration tests that exercise real read/write roundtrips against a running
-# Firebase Emulator Suite. They self-skip when no emulator is reachable, so the
-# default `Pkg.test()` run stays green without any emulator or credentials.
+# Firebase Emulator Suite.
 #
-# To run these, start the emulators and point the standard env vars at them, e.g.:
+# `runtests.jl` starts the emulator automatically via test/emulator_process.jl when
+# the Firebase CLI is installed (`npm install -g firebase-tools`, plus a JDK). These
+# tests self-skip when no emulator is reachable, so the default `Pkg.test()` run stays
+# green without any emulator or credentials.
 #
-#   firebase emulators:start --project demo-firebase \
-#       --only firestore,database,auth,storage
-#   export FIRESTORE_EMULATOR_HOST=localhost:8080
-#   export FIREBASE_DATABASE_EMULATOR_HOST=localhost:9000
+# To drive the emulator yourself instead, start it and point the standard env vars at
+# it (set FIREBASE_EMULATOR_AUTOSTART=false to stop runtests.jl spawning its own):
+#
+#   firebase emulators:start --project demo-firebase --config test/firebase.json \
+#       --only firestore,database,auth
+#   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+#   export FIREBASE_DATABASE_EMULATOR_HOST=127.0.0.1:9000
 
 using Firebase
 using Test
