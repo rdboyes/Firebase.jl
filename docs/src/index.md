@@ -10,7 +10,7 @@ Julia's Interface to Firebase REST API
 
 ```julia
 using Pkg
-Pkg.clone("https://github.com/ashwani-rathee/Firebase.jl.git")
+Pkg.add("Firebase")
 ```
 
 ```@index

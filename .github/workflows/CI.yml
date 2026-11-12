@@ -38,5 +38,6 @@ jobs:
             doctest(Firebase)'
       - run: julia --project=docs docs/make.jl
         env:
+          # Documenter deploys to gh-pages with the workflow's GITHUB_TOKEN
+          # (needs `contents: write`, granted above). No deploy key is required.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
