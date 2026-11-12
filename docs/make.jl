@@ -8,11 +8,11 @@ DocMeta.setdocmeta!(Firebase, :DocTestSetup, :(using Firebase); recursive=true)
 makedocs(;
     modules=[Firebase],
     authors="Ashwani Rathee",
-    repo="github.com/ashwani-rathee/Firebase.jl/blob/{commit}{path}#{line}",
+    repo=Remotes.GitHub("rdboyes", "Firebase.jl"),
     sitename="Firebase.jl",
     format=Documenter.HTML(;
         prettyurls=Base.get(ENV, "CI", "false") == "true",
-        canonical="https://ashwani-rathee.github.io/Firebase.jl",
+        canonical="https://rdboyes.github.io/Firebase.jl",
         assets=String[],
     ),
     pages=[
@@ -21,12 +21,13 @@ makedocs(;
         "Cloud Authentication" => "authentication.md",
         "Realtime Database" => "realtime.md",
         "Cloud Storage" => "storage.md",
+        "Emulator" => "emulator.md",
         "Utility Functions" => "utility.md",
     ],
 )
 
 deploydocs(;
-    repo="github.com/ashwani-rathee/Firebase.jl",
+    repo="github.com/rdboyes/Firebase.jl",
     devbranch="main",
     push_preview = true
 ) 
