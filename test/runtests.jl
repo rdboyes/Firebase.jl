@@ -9,6 +9,7 @@ include("emulator_process.jl")
     include("emulator.jl")
     include("cloudstorage.jl")
     include("token.jl")
+    include("realtime_unit.jl")
 
     # Integration tests against an emulator. If one is already running we reuse it;
     # otherwise we try to start the Firebase Emulator Suite ourselves and shut it

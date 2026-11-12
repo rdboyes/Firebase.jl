@@ -36,7 +36,8 @@ cloudstore_init("https://firebasestorage.googleapis.com/v0/b/[PROJECT_ID].appspo
 """
 function cloudstore_init(url)
     global STORE_URL = url
-    println("Cloud Storage set:", STORE_URL)
+    @debug "Cloud Storage URL set" STORE_URL
+    STORE_URL
 end
 
 """
@@ -166,7 +167,7 @@ function cloudstore_sendfile(file2upload="/test/onedance.mp3")
     # Uploads go to the collection endpoint with ?name=, which is what honours the
     # Content-Type header; posting to /o/<path> stores everything as octet-stream.
     final_url = "$(rstrip(STORE_URL, '/'))?name=$(_encode_object_path(file2upload))"
-    println("FINAL_URL:", final_url)
+    @debug "Cloud Storage upload" final_url
     http_response = HTTP.post(
         final_url,
         header,
@@ -197,7 +198,7 @@ cloudstore_get("/data.mp3"; dest="local-copy.mp3")
 function cloudstore_get(file2download=""; token=nothing, dest=nothing)
     final_url = "$STORE_URL$(_encode_object_path(file2download))?alt=media"
     token === nothing || (final_url *= "&token=$token")
-    println("Final URL:", final_url)
+    @debug "Cloud Storage download" final_url
     res = HTTP.get(final_url, Dict(auth_header(:storage)))
     outpath = dest === nothing ? lstrip(file2download, '/') : dest
     dirtocreate = dirname(outpath)

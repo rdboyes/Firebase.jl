@@ -53,6 +53,12 @@ using HTTP, JSON
                     @test realdb_get(path, hdrs) ==
                           Dict("first" => "ash", "last" => "rathee")
 
+                    # No explicit header: the emulator owner token is added automatically.
+                    @test realdb_get(path) == Dict("first" => "ash", "last" => "rathee")
+                    # `query` is passed through (it used to be ignored).
+                    @test realdb_get(path; query=Dict("shallow" => true)) ==
+                          Dict("first" => true, "last" => true)
+
                     realdb_delete(path, hdrs)
                     @test realdb_get(path, hdrs) === nothing
                 end

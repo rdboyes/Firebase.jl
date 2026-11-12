@@ -31,7 +31,7 @@ set_webapikey("asjdlajsj1j32lj312")
 """
 function set_webapikey(key::AbstractString)
     global WEB_API_KEY = key
-    println("WEB_API_KEY set")
+    nothing
 end
 
 """

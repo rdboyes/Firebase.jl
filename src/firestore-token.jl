@@ -11,8 +11,10 @@ CREDENTIALS = nothing
 
 # OAuth scopes requested for the service-account token. One token covers every
 # service this package talks to (Firestore, Cloud Storage, the Storage management
-# API), so a single cached session can be shared by all of them.
-const OAUTH_SCOPES = ["cloud-platform", "datastore", "devstorage.full_control", "firebase"]
+# API, Realtime Database), so a single cached session can be shared by all of them.
+# The Realtime Database specifically requires userinfo.email + firebase.database.
+const OAUTH_SCOPES = ["cloud-platform", "datastore", "devstorage.full_control",
+                      "firebase", "firebase.database", "userinfo.email"]
 
 # Cached GoogleSession for `CREDENTIALS`. GoogleCloud.authorize caches the access
 # token on the session object until shortly before it expires, so the session must
@@ -83,8 +85,7 @@ end
 
 function init(filepath)
     _set_credentials!(JSONCredentials(filepath))
-    println("Project Admin SDK key is ", filepath, " now!!")
-    println(CREDENTIALS)
+    @info "Loaded Firebase service-account credentials" project_id = CREDENTIALS.project_id
 end
 
 function init()

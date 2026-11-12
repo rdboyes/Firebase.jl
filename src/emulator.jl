@@ -109,7 +109,7 @@ function use_emulator(; host="localhost", firestore=nothing, database=nothing,
         global STORE_URL = "http://$(EMULATOR[:storage])/v0/b/$(project_id).appspot.com/o/"
     end
 
-    println("Emulator config: ", EMULATOR, " project_id=", EMULATOR_PROJECT_ID)
+    @debug "Emulator config" EMULATOR EMULATOR_PROJECT_ID
     EMULATOR
 end
 

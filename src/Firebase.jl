@@ -76,6 +76,7 @@ export realdb_post
 export realdb_delete
 export realdb_put
 export realdb_patch
+export realdb_download
 
 # Cloud Storage
 export cloudstore_init

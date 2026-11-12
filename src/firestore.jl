@@ -1,7 +1,6 @@
 #
 
 function get_singlepage(documentpath; pagesize=300, pagetoken::String="")
-    @show "Firestore.get_singlepage", documentpath, pagesize, pagetoken
     base_url = firestore_url()
     headers = Dict(auth_header())
     project_id = projectid()
@@ -11,13 +10,13 @@ function get_singlepage(documentpath; pagesize=300, pagetoken::String="")
     if !isempty(pagetoken)
         query["pageToken"] = pagetoken
     end
+    @debug "Firestore request" url
     http_response = HTTP.get(url, headers; query=query)
     response_string = String(http_response.body)
     JSON.parse(response_string)
 end
 
 function get_collection(documentpath; pagesize=300)
-    @show "Firestore.get_collection", documentpath, pagesize
     docs = []
     pagetoken = ""
     while true
@@ -26,8 +25,8 @@ function get_collection(documentpath; pagesize=300)
             pagesize=pagesize,
             pagetoken=pagetoken,
         )
-        isempty(response) && return docs
-        push!(docs, response["documents"]...)
+        # An empty collection (or an empty trailing page) has no "documents" key.
+        append!(docs, Base.get(response, "documents", []))
         !haskey(response, "nextPageToken") && break
         pagetoken = response["nextPageToken"]
     end
@@ -37,7 +36,6 @@ end
 get_document(documentpath) = get_singlepage(documentpath)
 
 function get(path...)
-    @show "Firestore.get", path
     full_path = join(path, '/')
     length(path) % 2 == 0 && return convert_map(get_document(full_path))
     map(convert_map, get_collection(full_path))
@@ -59,7 +57,7 @@ function get_request(url::String)
     header = Dict(auth_header())
     project_id = projectid()
     url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
-    println(url)
+    @debug "Firestore request" url
     http_response = HTTP.get(url, header)
     response_string = String(http_response.body)
     JSON.parse(response_string)
@@ -91,10 +89,9 @@ res = firestore_batchget(Dict("documents" => [
 function firestore_batchget(batch)
     header = Dict(auth_header())
     project_id = projectid()
-    println(batch)
     body = JSON.json(batch)
-    println("Batch:", body)
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:batchGet"
+    @debug "Firestore request" final_url
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -135,10 +132,9 @@ res = firestore_batchwrite(Dict("writes" => [Dict("update" => Dict(
 function firestore_batchwrite(batch)
     header = Dict(auth_header())
     project_id = projectid()
-    println(batch)
     body = JSON.json(batch)
-    println("Batch:", body)
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:batchWrite"
+    @debug "Firestore request" final_url
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -172,10 +168,9 @@ firestore_beginTransaction()
 function firestore_beginTransaction()
     header = Dict(auth_header())
     project_id = projectid()
-    # println(batch)
     # body = JSON.json(batch)
-    # println("Batch:", body)
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:beginTransaction"
+    @debug "Firestore request" final_url
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -208,8 +203,8 @@ function firestore_commit(transactionid="", body=Dict{String,Any}())
     payload = Dict{String,Any}(body)
     payload["transaction"] = transactionid
     body = JSON.json(payload)
-    println("Body:", body)
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents:commit"
+    @debug "Firestore request" final_url
     http_response =  HTTP.request(
         "POST",
         final_url,
@@ -258,12 +253,11 @@ function firestore_createdoc(url, body=_CREATEDOC_BODY; query="")
     header = Dict(auth_header())
     project_id = projectid()
     body = JSON.json(body)
-    println("Body:", body)
     query = Dict{String,Any}("documentId" => query)
     # mask part doesn't work yet
         # query = JSON.json(query)
-        # println(query)
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
+    @debug "Firestore request" final_url
     http_response = HTTP.post(
         final_url,
         header,
@@ -292,6 +286,7 @@ function firestore_deletedoc(url)
     header = Dict(auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url?currentDocument.exists=true"
+    @debug "Firestore request" final_url
     http_response = HTTP.delete(
         final_url,
         header,
@@ -316,6 +311,7 @@ function firestore_getdoclist(url)
     header = Dict(auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
+    @debug "Firestore request" final_url
     http_response =  HTTP.get(
         final_url,
         header,
@@ -327,9 +323,11 @@ end
 
 
 """
-firestore_getcollectionids(url;query="")
+firestore_getcollectionids(url; pagesize=300, pagetoken="")
 
-Lists all the collection IDs underneath a document.
+Lists the collection IDs directly underneath the document at `url`. Returns the raw
+response: `"collectionIds"` and, when there are more results, `"nextPageToken"`,
+which can be passed back as `pagetoken` to fetch the next page.
 
 # Example
 ```julia
@@ -337,25 +335,16 @@ init("[FIREBASE_ADMIN_SDK].json")
 firestore_getcollectionids("/firebase_test/firebase_post")
 ```
 """
-function firestore_getcollectionids(url;query="")
-    header = Dict(auth_header())
+function firestore_getcollectionids(url; pagesize=300, pagetoken="")
+    header = Dict("Content-Type" => "application/json", auth_header())
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:listCollectionIds"
-    pagesize = 300
-    pagetoken = ""
-    if !isempty(pagetoken)
-        query["pageToken"] = pagetoken
-    end
-    query = Dict{String,Any}("pageSize" => pagesize, "pageToken" => pagetoken)
-
-    # this query content is supposed to be request body
-    http_response = HTTP.post(
-        final_url,
-        header;
-        query=query,
-    )
-    response_string = String(http_response.body)
-    JSON.parse(response_string)
+    # listCollectionIds takes its paging settings in the JSON request body.
+    payload = Dict{String,Any}("pageSize" => pagesize)
+    isempty(pagetoken) || (payload["pageToken"] = pagetoken)
+    @debug "Firestore request" final_url
+    http_response = HTTP.post(final_url, header, JSON.json(payload))
+    JSON.parse(String(http_response.body))
 end
 
 
@@ -388,7 +377,7 @@ function firestore_partitionquery(url, body=_PARTITIONQUERY_BODY)
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:partitionQuery"
     body = JSON.json(body)
-    println("Body:", body)
+    @debug "Firestore request" final_url
     http_response = HTTP.post(
         final_url,
         header,
@@ -428,11 +417,10 @@ function firestore_patch(url, body=_PATCH_BODY)
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url"
     body = JSON.json(body)
-    println("Body:", body)
     # query = Dict{String,Any}("documentId" => query)
     # mask part doesn't work yet
         # query = JSON.json(query)
-        # println(query)
+    @debug "Firestore request" final_url
     http_response = HTTP.patch(
         final_url,
         header,
@@ -470,8 +458,8 @@ function firestore_rollback(transactionid, body=_ROLLBACK_BODY)
     payload = Dict{String,Any}(body)
     payload["transaction"] = transactionid
     body = JSON.json(payload)
-    println("Body:", body)
 
+    @debug "Firestore request" final_url
     http_response = HTTP.post(
         final_url,
         header,
@@ -527,8 +515,7 @@ function firestore_runquery(url, body=_RUNQUERY_BODY)
     project_id = projectid()
     final_url = "$(firestore_url())/projects/$project_id/databases/(default)/documents$url:runQuery"
     body = JSON.json(body)
-    println("Body:", body)
-    println("FINAL_URL:", final_url)
+    @debug "Firestore request" final_url
     http_response = HTTP.post(
         final_url,
         header,
