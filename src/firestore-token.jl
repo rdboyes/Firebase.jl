@@ -33,36 +33,22 @@ function _set_credentials!(creds)
 end
 
 """
-    initparsedjson( parsedjson)
+    initparsedjson(jsonstring)
 
-initialize if the sdk key is in parsed JSON format and the file is saved as adminsdkkey.json
+Initialize from a service-account key given as a JSON string, e.g. one read from an
+environment variable or a secret manager. The key is parsed in memory and never
+written to disk.
 
 ## Example
 
-```md
-julia> r = HTTP.get(BASE_URL, header); # returns a response with header and body
-HTTP.Messages.Response
-
-julia> response = JSON.json(JSON.parse(String(r.body)))
-"{\"client_email\":\"****\",\"client_id\":\"****\",\"auth_uri\":\"https://accounts.google.com/o/oauth2/auth\",\"auth_provider_x509_cert_url\":\"https://www.googleapis.com/oauth2/v1/certs\",\"token_uri\":\"https://oauth2.googleapis.com/token\",\"client_x509_cert_url\":\"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-jk50g%40volka-bot.iam.gserviceaccount.com\",\"project_id\":\"volka-bot\",\"type\":\"service_account\",\"private_key\":\"****\",\"private_key_id\":\"****\"}"
-
-julia> initparsedjson( response)
-Project Admin SDK key is adminsdkkey.json now!!
-project_id: ****
-client_email: ****
-````
+```julia
+julia> initparsedjson(ENV["FIREBASE_ADMIN_SDK_JSON"])
+```
 """
-function initparsedjson( parsedjson)
-    open("adminsdkkey.json","w") do f 
-        write(f, parsedjson) 
-    end
-    _set_credentials!(JSONCredentials("adminsdkkey.json"))
-    println("Project Admin SDK key is adminsdkkey.json now!!")
-    println(CREDENTIALS)
-end
+initparsedjson(jsonstring::AbstractString) = init(JSON.parse(jsonstring))
 
 """
-    init( julianparseddict::Dict)
+    init( julianparseddict::AbstractDict)
 
 Initialize if the sdk key is in Julia dict format.
 
@@ -86,12 +72,9 @@ Dict{String, Any} with 10 entries:
   "private_key_id"              => "****"
 
 julia> init(response)
-Project Admin SDK key is adminsdkkey.json now!!
-project_id: ****
-client_email: ****
 ````
 """
-function init(julianparseddict::Dict)
+function init(julianparseddict::AbstractDict)
     # credentials need to be in a Dict{Symbol, <:AbstractString} for GoogleCloud.jl
     _set_credentials!(JSONCredentials(
         Dict(Symbol(k) => string(v) for (k, v) in julianparseddict)
@@ -149,10 +132,17 @@ function get_token()
     end
 end
 
-function auth_header()
-    # The Firestore/Storage emulators accept a fixed owner token and issue no real
-    # OAuth, so skip the GoogleCloud round-trip entirely when the emulator is active.
-    if emulator_active(:firestore) || emulator_active(:storage)
+"""
+    auth_header(service=:firestore)
+
+`"Authorization" => ...` header for a request to `service`. When that service is
+pointed at the emulator, the emulator's fixed owner token is used and no OAuth call
+is made. Any other service, including `:management` (the Storage management API,
+which has no emulator), gets a real service-account token, so emulating one service
+never sends the fake token to a live one.
+"""
+function auth_header(service::Symbol=:firestore)
+    if haskey(EMULATOR, service) && emulator_active(service)
         return "Authorization" => "Bearer owner"
     end
     token = get_token()

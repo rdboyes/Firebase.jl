@@ -44,3 +44,23 @@ end
     Firebase._set_credentials!(nothing)
     @test_throws Any get_token()
 end
+
+@testset "No hard-coded defaults" begin
+    # These used to default to a real API key / a real person's email.
+    @test_throws MethodError set_webapikey()
+    @test_throws MethodError firebase_passwordreset()
+    @test_throws MethodError firebase_fetchproviders()
+    @test_throws MethodError firebase_signinoauth()
+    @test_throws MethodError firestore_batchget()
+    @test_throws MethodError firestore_batchwrite()
+end
+
+@testset "initparsedjson keeps the key in memory" begin
+    mktempdir() do dir
+        cd(dir) do
+            # The key is invalid so JSONCredentials fails, but no file may appear.
+            @test_throws Exception initparsedjson("""{"type": "service_account"}""")
+            @test isempty(readdir(dir))
+        end
+    end
+end

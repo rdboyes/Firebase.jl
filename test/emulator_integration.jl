@@ -43,7 +43,7 @@ using HTTP, JSON
 
             if up[:database]
                 @testset "Realtime DB roundtrip" begin
-                    hdrs = [auth_header()]                # ["Authorization" => "Bearer owner"]
+                    hdrs = [auth_header(:database)]              # ["Authorization" => "Bearer owner"]
                     path = "/emulatortest_$(rand(UInt32))"
 
                     realdb_put(path, hdrs, Dict("first" => "ash"))

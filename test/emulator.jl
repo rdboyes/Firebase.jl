@@ -83,6 +83,18 @@ using Test
         @test Firebase.CREDENTIALS === nothing
         use_emulator(firestore=true, project_id="demo-firebase", detect_env=false)
         @test auth_header() == ("Authorization" => "Bearer owner")
+        @test auth_header(:firestore) == ("Authorization" => "Bearer owner")
+        Firebase.use_production()
+    end
+
+    @testset "auth_header is per service" begin
+        # Only Storage is emulated: Storage gets the owner token, but live Firestore
+        # and the (never-emulated) management API must not. With no credentials
+        # loaded they fail asking for init() instead of sending "Bearer owner".
+        use_emulator(storage=true, project_id="demo-firebase", detect_env=false)
+        @test auth_header(:storage) == ("Authorization" => "Bearer owner")
+        @test_throws "Firebase.init" auth_header(:firestore)
+        @test_throws "Firebase.init" auth_header(:management)
         Firebase.use_production()
     end
 

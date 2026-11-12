@@ -1,19 +1,3 @@
-# using HTTP,JSON,Firebase
-# # Firebase Auth  backend a REST API
-
-# Firebase.init("test/fir-jl-457eb-firebase-adminsdk-40928-0efd6a89e7.json");
-# header = Dict(
-#     "Authorization" =>
-#         "Bearer ya29.c.Kp8BAwh19dsnHN7yPkhlb3toQleIQuAQ94YlV-aXs6ijDEvEKtvKmoNiXw9Fg7u-EjpHjusuu_k9nIaW7tFohhW97fPTx7G0KowT-R0nwI52XdvHrG-TrRAZOjC38eiu_eaPgXTh2wxHUDH-sVPpvA5Yzv8DgCoCRTUboxa3ajDVhRiyvM7uOiFcR27k6eoMrOmk_EBTabpODRLhtIeKG10O",
-# );
-# body = """
-# {
-#     email: "ab669522@gmail.com",
-#     password: "helloworld!!",
-#     returnSecureToken: true
-# }
-# """
-# HTTP.post("$(auth_url())/accounts:signUp?key=AIzaSyAEeSloxz3EtXTm73EdSIWY_WRVPF51hhI",header,body)
 using HTTP,JSON
 
 
@@ -26,6 +10,7 @@ WEB_API_KEY = nothing
 # containing quotes or backslashes from producing malformed JSON, and sets the
 # Content-Type header the API expects.
 function _auth_post(endpoint, payload)
+    isnothing(WEB_API_KEY) && throw("Run set_webapikey(key) before calling Firebase Auth")
     header = Dict("Content-Type" => "application/json")
     url = "$(auth_url())/accounts:$endpoint?key=$WEB_API_KEY"
     http_response = HTTP.post(url, header, JSON.json(payload))
@@ -34,18 +19,19 @@ function _auth_post(endpoint, payload)
 end
 
 """
-set_webapikey(key ="")
+set_webapikey(key)
 
-sets WEB_API_KEY
+Sets the project's Web API key, used by every Firebase Auth call. Find it under
+Project settings → General in the Firebase console.
 
 # Example
 ```julia
 set_webapikey("asjdlajsj1j32lj312")
 ```
 """
-function set_webapikey(key="AIzaSyAEeSloxz3EtXTm73EdSIWY_WRVPF51hhI")
+function set_webapikey(key::AbstractString)
     global WEB_API_KEY = key
-    println("WEB_API_KEY set: ", WEB_API_KEY)
+    println("WEB_API_KEY set")
 end
 
 """
@@ -59,7 +45,7 @@ signupNewUser endpoint.
 
 ```julia
 set_webapikey("WEB_API_KEY")
-firebase_signup("ashwani@gmail.com","hello!!")
+firebase_signup("user@example.com","hello!!")
 #=
 Dict{String, Any} with 6 entries:
   "refreshToken" => "AGEhc0AjgXJevwy_rkJ3r4VUHc4EEORngVF-rwEtOuO007AymRqbAzVnn1iAMCZNHqzwnCI1X8fkJ0OPE2fTuGN7ameU6P7SmibwIFs8sOZxUI8C_uklOkk1IG5DFdWXAC45mK_0Hy4tuJXJUvI8Kuy6LS-GERZ5Bc…
@@ -67,7 +53,7 @@ Dict{String, Any} with 6 entries:
   "localId"      => "GRCBj28Pkhat0mYsJS0BVrlVmJd2"
   "expiresIn"    => "3600"
   "idToken"      => "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRjNGQwMGJjM2NiZWE4YjU0NTMzMWQxZjFjOTZmZDRlNjdjNTFlODkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmlyLWp…
-  "email"        => "ashwani@gmail.com"
+  "email"        => "user@example.com"
 =#
 ```
 """
@@ -86,7 +72,7 @@ to the Auth verifyPassword endpoint.
 # Example
 
 ```julia
-firebase_signin("ashwani1@gmail.com" , "hello1231!!")
+firebase_signin("user@example.com" , "hello1231!!")
 #=
 Dict{String, Any} with 8 entries:
   "refreshToken" => "AGEhc0C1F9smilhBPdT5TYClumCwdzGI9q43s5r-MsqW-bJTeiIw1doG7zRF_VMX2a0WELR3zRB…
@@ -96,7 +82,7 @@ Dict{String, Any} with 8 entries:
   "idToken"      => "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRjNGQwMGJjM2NiZWE4YjU0NTMzMWQxZjFjOTZmZDRlNjd…
   "registered"   => true
   "expiresIn"    => "3600"
-  "email"        => "ashwani1@gmail.com"
+  "email"        => "user@example.com"
 =#
 ```
 """
@@ -132,9 +118,8 @@ function firebase_signinanon(returnSecureToken::Bool=true)
   _auth_post("signUp", Dict("returnSecureToken" => returnSecureToken))
 end
 
-GOOGLE_ID_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRjNGQwMGJjM2NiZWE4YjU0NTMzMWQxZjFjOTZmZDRlNjdjNTFlODkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmlyLWpsLTQ1N2ViIiwiYXVkIjoiZmlyLWpsLTQ1N2ViIiwiYXV0aF90aW1lIjoxNjIzOTQwMzIwLCJ1c2VyX2lkIjoiemdySTRnM3VhbFZKVzdJRWlSbFBGZzVqSXRBMiIsInN1YiI6Inpnckk0ZzN1YWxWSlc3SUVpUmxQRmc1akl0QTIiLCJpYXQiOjE2MjM5NDAzMjAsImV4cCI6MTYyMzk0MzkyMCwiZW1haWwiOiJhc2h3YW5pMUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYXNod2FuaTFAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.uDT2BFPXlJWXzartwx8t8iBwriZc3PTpwJ3_5biOTI8H9sHU4w46E-XwUvW45Qip0_2Cmf6JZjbfkAZhGHnzIl6b9C3j2iJ0nXY_tvr0cC8otGPp01J8vBSZCu24tI0BdPaymXrFek4ouGmnbFCdxO2D3eeB59ZVsJCm9JWzGjSlrO5m0KMIOhYAV5aq6BaT32AzkPZJDXWTjc3nEXrxF-5n8Nehek_QbxROh7pwJHqDul5xswlDYGqHAx3d2jrcrSehGhfetHfPx9IYOPttAT0mSeROz3Lgy9cLmfO5HvAZMNoJs0gif7ffr773TJMkbELEc-gyBFETnoY87LPvuA"
 """
-firebase_signinoauth()
+firebase_signinoauth(id_token, provider="google.com")
 
 Sign in with OAuth credential
 You can sign in a user with an OAuth credential by issuing
@@ -144,12 +129,12 @@ This doesn't work today
 
 # Example
 
-```julia"oobCode":"[VERIFICATION_CODE]"
-firebase_signinoauth()
+```julia
+firebase_signinoauth("[GOOGLE_ID_TOKEN]")
 ```
 
 """
-function firebase_signinoauth(id_token=GOOGLE_ID_TOKEN, provider="google.com")
+function firebase_signinoauth(id_token::AbstractString, provider="google.com")
   _auth_post("signInWithIdp",
              Dict("postBody" => "id_token=$id_token&providerId=$provider",
                   "requestUri" => "http://localhost",
@@ -158,7 +143,7 @@ function firebase_signinoauth(id_token=GOOGLE_ID_TOKEN, provider="google.com")
 end
 
 """
-firebase_fetchproviders(email="")
+firebase_fetchproviders(email; continueuri="http://localhost")
 
 Fetch providers for email
 You can look all providers associated with a specified email by 
@@ -167,7 +152,7 @@ issuing an HTTP POST request to the Auth createAuthUri endpoint.
 # Example
 
 ```julia
-julia> firebase_fetchproviders("ashwani1@gmail.com")
+julia> firebase_fetchproviders("user@example.com")
 #= 
 Dict{String, Any} with 5 entries:
   "allProviders"  => Any["password"]
@@ -178,13 +163,13 @@ Dict{String, Any} with 5 entries:
 =#
 ```
 """
-function firebase_fetchproviders(email="ab669522@gmail.com")
+function firebase_fetchproviders(email::AbstractString; continueuri="http://localhost")
   _auth_post("createAuthUri", Dict("identifier" => email,
-                                   "continueUri" => "http://localhost:8080/app"))
+                                   "continueUri" => continueuri))
 end
 
 """
-firebase_passwordreset(email="ab669522@gmail.com")
+firebase_passwordreset(email)
 
 Send password reset email
 You can send a password reset email by 
@@ -193,11 +178,11 @@ issuing an HTTP POST request to the Auth getOobConfirmationCode endpoint.
 # Example
 
 ```julia
-firebase_passwordreset(email="ab669522@gmail.com")
+firebase_passwordreset("user@example.com")
 # email will recieve the reset password email
 ```
 """
-function firebase_passwordreset(email="ab669522@gmail.com")
+function firebase_passwordreset(email::AbstractString)
   _auth_post("sendOobCode", Dict("requestType" => "PASSWORD_RESET", "email" => email))
 end
 
@@ -240,10 +225,10 @@ HTTP POST request to the Auth setAccountInfo endpoint.
 
 # Example
 ```julia
-data = firebase_signin("ab669522@gmail.com,"helloworld!!")
-firebase_changeemail("ab6695221@gmail.com",data["idToken"])
-data = firebase_signin("ab6695221@gmail.com,"helloworld!!")
-firebase_changeemail("ab669522@gmail.com",data["idToken"])
+data = firebase_signin("user@example.com,"helloworld!!")
+firebase_changeemail("user@example.com",data["idToken"])
+data = firebase_signin("user@example.com,"helloworld!!")
+firebase_changeemail("user@example.com",data["idToken"])
 ````
 
 """
@@ -261,9 +246,9 @@ HTTP POST request to the Auth setAccountInfo endpoint.
 
 # Example
 ```julia
-data = firebase_signin("ab669522@gmail.com","helloworld!!")
+data = firebase_signin("user@example.com","helloworld!!")
 firebase_changepassword("hellopaaji!!",data["idToken"])
-data = firebase_signin("ab6695221@gmail.com","hellopaaji!!")
+data = firebase_signin("user@example.com","hellopaaji!!")
 firebase_changepassword("helloworld!!",data["idToken"])
 ````
 
@@ -282,7 +267,7 @@ HTTP POST request to the Auth setAccountInfo endpoint.
 # TODO: delete attribute
 # Example
 ```julia
-data = firebase_signin("ab669522@gmail.com","helloworld!!")
+data = firebase_signin("user@example.com","helloworld!!")
 firebase_updateprofile("ash","https://i.imgur.com/zgDkgSR.jpeg",data["idToken"])
 #=       
 Dict{String, Any} with 8 entries:
@@ -292,8 +277,8 @@ Dict{String, Any} with 8 entries:
   "displayName"      => "ash"
   "passwordHash"     => "UkVEQUNURUQ="
   "emailVerified"    => false
-  "providerUserInfo" => Any[Dict{String, Any}("rawId"=>"ab669522@gmail.com", "photoUrl"=>"https:…
-  "email"            => "ab669522@gmail.com"
+  "providerUserInfo" => Any[Dict{String, Any}("rawId"=>"user@example.com", "photoUrl"=>"https:…
+  "email"            => "user@example.com"
 =#
   ```
 """
@@ -309,7 +294,7 @@ Get user data
 You can get a user's data by issuing an HTTP POST request to the Auth getAccountInfo endpoint.
 # Example
 ```julia
-data = firebase_signin("ab669522@gmail.com","helloworld!!")
+data = firebase_signin("user@example.com","helloworld!!")
 firebase_getuserinfo(data["idToken"])
 ```
 """
@@ -326,10 +311,10 @@ HTTP POST request to the Auth setAccountInfo endpoint.
 
 # Example
 ```julia
-data = firebase_signin("ab669522@gmail.com","helloworld!!")
+data = firebase_signin("user@example.com","helloworld!!")
 firebase_linkuserinfo("ash@gmail.com", "hello!!123as",data["idToken"])
 data = firebase_signin("ash@gmail.com", "hello!!123as")
-firebase_linkuserinfo("ab669522@gmail.com","helloworld!!",data["idToken"])
+firebase_linkuserinfo("user@example.com","helloworld!!",data["idToken"])
 ```
 """
 function firebase_linkuserinfo(email::String="", password::String="",firebase_id_token=FIREBASE_ID_TOKEN)
@@ -356,9 +341,9 @@ HTTP POST request to the Auth setAccountInfo endpoint.
 
 # Example
 ```julia
-set_webapikey()
+set_webapikey("[WEB_API_KEY]")
 
-data = firebase_signup("ashwani12123@gmail.com","hello!!123")
+data = firebase_signup("user@example.com","hello!!123")
 #=
 Dict{String, Any} with 6 entries:
   "refreshToken" => "AGEhc0A4Y-wFC0S2Cub-7TY2XNfZMYQf-YKzTdQWl9_SjrRpUW4d3QymQy5P1EN4Me8-SE695sPE_MBXoMoqTzKLy76nBvDGmybGmP4wnWLyrJql-HfoVPRtG1emeJ3E61DnDbUIZOvV-Y3GuzpJ57XZojHBM1aoMp…
@@ -366,7 +351,7 @@ Dict{String, Any} with 6 entries:
   "localId"      => "neXn8Mg562VFgENRtA2SEC0NEBk1"
   "expiresIn"    => "3600"
   "idToken"      => "eyJhbGciOiJSUzI1NiIsImtpZCI6ImRjNGQwMGJjM2NiZWE4YjU0NTMzMWQxZjFjOTZmZDRlNjdjNTFlODkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmlyLWp…
-  "email"        => "ashwani12123@gmail.com"
+  "email"        => "user@example.com"
 =#
 firebase_unlinkprovide(data["idToken"], "google.com")
 #=
@@ -375,8 +360,8 @@ Dict{String, Any} with 6 entries:
   "localId"          => "neXn8Mg562VFgENRtA2SEC0NEBk1"
   "passwordHash"     => "UkVEQUNURUQ="
   "emailVerified"    => false
-  "providerUserInfo" => Any[Dict{String, Any}("rawId"=>"ashwani12123@gmail.com", "providerId"=>"password", "federatedId"=>"ashwani12123@gmail.com", "email"=>"ashwani12123@gmail.com")]
-  "email"            => "ashwani12123@gmail.com"
+  "providerUserInfo" => Any[Dict{String, Any}("rawId"=>"user@example.com", "providerId"=>"password", "federatedId"=>"user@example.com", "email"=>"user@example.com")]
+  "email"            => "user@example.com"
 =#
 ```
 """
@@ -395,7 +380,7 @@ You can send an email verification for the current user by issuing an HTTP POST 
 
 # Example
 ```julia
-data = firebase_signin("ab669522@gmail.com","helloworld!!")
+data = firebase_signin("user@example.com","helloworld!!")
 firebase_verifyemail((data["idToken"])
 ```
 """
@@ -422,7 +407,7 @@ request to the Auth deleteAccount endpoint.
 # Example
 
 ```julia
-data = firebase_signup("ashwani121231@gmail.com","hello!!123")
+data = firebase_signup("user@example.com","hello!!123")
 firebase_deleteuser(data["idToken"])
 ```
 """

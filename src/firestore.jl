@@ -65,41 +65,30 @@ function get_request(url::String)
     JSON.parse(response_string)
 end
 
-# Each request builder below has its own default body. They must be distinct names:
+# Each request builder below that has a default body gets its own distinct global:
 # a default argument is evaluated at call time, so several functions defaulting to a
 # shared global `body` would all pick up whichever value was assigned last.
-_BATCHGET_BODY = Dict(
-    "newTransaction" => Dict(),
-    # "transaction" => "",
-    # "readTime" => "",
-    "documents" => [
-    "projects/fir-jl-457eb/databases/(default)/documents/firebase_test/firebase_get",
-    "projects/fir-jl-457eb/databases/(default)/documents/firebase_test/firebase_get?collectionID=firebase_get_collection",
-    "projects/fir-jl-457eb/databases/(default)/documents/firebase_test/firebase_get/firebase_get_collection/test",
-    ],
-    "mask" => Dict(
-        "fieldPaths" => [
-            "first1",
-        ]),
-    
-)
 
 # mask gets particular fields looks like
 # weird field in mask is just ignored and nothing happens
 """
-firestore_batchget(batch=body)
+firestore_batchget(batch)
 
-Gets multiple documents
+Gets multiple documents. `batch` is a BatchGetDocumentsRequest body, e.g.
+`Dict("documents" => ["projects/<id>/databases/(default)/documents/<path>", ...])`.
 Documents returned by this method are not guaranteed 
 to be returned in the same order that they were requested.
 
 # Example
 ```julia
 init("[FIREBASE_ADMIN_SDK].json")
-res = firestore_batchget()
+pid = projectid()
+res = firestore_batchget(Dict("documents" => [
+    "projects/\$pid/databases/(default)/documents/users/alice",
+]))
 ```
 """
-function firestore_batchget(batch=_BATCHGET_BODY)
+function firestore_batchget(batch)
     header = Dict(auth_header())
     project_id = projectid()
     println(batch)
@@ -117,38 +106,13 @@ function firestore_batchget(batch=_BATCHGET_BODY)
 end
 
 
-_BATCHWRITE_BODY = Dict(
-    "writes" => [
-        Dict(
-            "update" => Dict(
-                "name" => "projects/fir-jl-457eb/databases/(default)/documents/firebase_test/firebase_get",
-                "fields" => Dict(
-                    "first" => Dict(
-                        "stringValue" => "ashwani",
-                        ),
-                        "last" => Dict(
-                            "stringValue" => "rathee",
-                            )
-                )
-            ),
-            "updateMask" => Dict(
-                "fieldPaths" => [
-                    "first",
-                    "last",
-                ]
-            )
-        )
-    ],
-    "labels" => Dict{String,String}()
-)
-
 # study types of writes from here https://firebase.google.com/docs/firestore/reference/rest/v1/Write
 # study the effect of labelss, and update masks
 # Labels associated with this batch write.
 # mask gets particular fields looks like
 # weird field in mask is just ignored and nothing happens
 """
-firestore_batchwrite(batch=body)
+firestore_batchwrite(batch)
 
 Applies a batch of write operations.
 The documents.batchWrite method does not apply the write operations atomically
@@ -161,10 +125,14 @@ If you require an atomically applied set of writes, use documents.commit instead
 # Example
 ```julia
 init("[FIREBASE_ADMIN_SDK].json")
-res = firestore_batchwrite()
+pid = projectid()
+res = firestore_batchwrite(Dict("writes" => [Dict("update" => Dict(
+    "name" => "projects/\$pid/databases/(default)/documents/users/alice",
+    "fields" => Dict("first" => Dict("stringValue" => "Alice")),
+))]))
 ```
 """
-function firestore_batchwrite(batch=_BATCHWRITE_BODY)
+function firestore_batchwrite(batch)
     header = Dict(auth_header())
     project_id = projectid()
     println(batch)
@@ -218,36 +186,12 @@ function firestore_beginTransaction()
     JSON.parse(response_string)
 end
 
-_COMMIT_BODY = Dict(
-    "writes" => [
-        Dict(
-            "update" => Dict(
-                "name" => "projects/fir-jl-457eb/databases/(default)/documents/firebase_test/firebase_get",
-                "fields" => Dict(
-                    "first" => Dict(
-                        "stringValue" => "ashwani",
-                        ),
-                        "last" => Dict(
-                            "stringValue" => "rathee",
-                            )
-                )
-            ),
-            "updateMask" => Dict(
-                "fieldPaths" => [
-                    "first",
-                    "last",
-                ]
-            )
-        )
-    ],
-)
-
 # commits a particular transaction that was started or is happening 
 # this one is particularly interesting
 """
-firestore_commit(transactionid="",body =body)
+firestore_commit(transactionid="", body=Dict())
 
-Commits a transaction, while optionally updating documents.
+Commits a transaction, while optionally applying the writes in `body` (`Dict("writes" => [...])`).
 
 # Example
 ```julia
@@ -256,7 +200,7 @@ data = firestore_beginTransaction()
 firestore_commit(data["transaction"])
 ```
 """
-function firestore_commit(transactionid="", body=_COMMIT_BODY)
+function firestore_commit(transactionid="", body=Dict{String,Any}())
     header = Dict(auth_header())
     project_id = projectid()
     # Copy rather than mutate: `body` may be the shared default, or a caller's dict

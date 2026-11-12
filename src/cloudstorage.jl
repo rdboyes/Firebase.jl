@@ -11,7 +11,7 @@ _bucket_resource(project_id, bucket) = "projects/$project_id/buckets/$bucket"
 _management_url(path) = "$STORAGE_MANAGEMENT_URL/$path"
 
 function _management_request(method, path; query=nothing, body=nothing)
-    header = Dict(auth_header())
+    header = Dict(auth_header(:management))
     url = _management_url(path)
     http_response = if body === nothing
         query === nothing ? HTTP.request(method, url, header) :
@@ -161,7 +161,7 @@ cloudstore_sendfile("/audio/data.mp3")
 """
 function cloudstore_sendfile(file2upload="/test/onedance.mp3")
     localpath = lstrip(file2upload, '/')
-    header = Dict("Content-Type" => content_type(localpath), auth_header())
+    header = Dict("Content-Type" => content_type(localpath), auth_header(:storage))
     body = read(localpath)
     # Uploads go to the collection endpoint with ?name=, which is what honours the
     # Content-Type header; posting to /o/<path> stores everything as octet-stream.
@@ -176,7 +176,6 @@ function cloudstore_sendfile(file2upload="/test/onedance.mp3")
     JSON.parse(response_string)
 end
 
-# STORE_URL = "https://firebasestorage.googleapis.com/v0/b/fir-jl-457eb.appspot.com/o/"
 
 """
 cloudstore_get(file2download; token=nothing, dest=nothing)
@@ -199,7 +198,7 @@ function cloudstore_get(file2download=""; token=nothing, dest=nothing)
     final_url = "$STORE_URL$(_encode_object_path(file2download))?alt=media"
     token === nothing || (final_url *= "&token=$token")
     println("Final URL:", final_url)
-    res = HTTP.get(final_url, Dict(auth_header()))
+    res = HTTP.get(final_url, Dict(auth_header(:storage)))
     outpath = dest === nothing ? lstrip(file2download, '/') : dest
     dirtocreate = dirname(outpath)
     isempty(dirtocreate) || mkpath(dirtocreate)
