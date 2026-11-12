@@ -9,6 +9,29 @@ using REPL.TerminalMenus
 # emulator hosts at runtime.
 CREDENTIALS = nothing
 
+# OAuth scopes requested for the service-account token. One token covers every
+# service this package talks to (Firestore, Cloud Storage, the Storage management
+# API), so a single cached session can be shared by all of them.
+const OAUTH_SCOPES = ["cloud-platform", "datastore", "devstorage.full_control", "firebase"]
+
+# Cached GoogleSession for `CREDENTIALS`. GoogleCloud.authorize caches the access
+# token on the session object until shortly before it expires, so the session must
+# be reused across requests; creating a new one per call forces a JWT signing and an
+# OAuth round-trip on every request. Guarded by SESSION_LOCK so concurrent tasks do
+# not race to refresh the token.
+SESSION = nothing
+const SESSION_LOCK = ReentrantLock()
+
+# Install new credentials and drop any session/token tied to the old ones.
+function _set_credentials!(creds)
+    global CREDENTIALS, SESSION
+    lock(SESSION_LOCK) do
+        CREDENTIALS = creds
+        SESSION = nothing
+    end
+    creds
+end
+
 """
     initparsedjson( parsedjson)
 
@@ -30,11 +53,10 @@ client_email: ****
 ````
 """
 function initparsedjson( parsedjson)
-    global CREDENTIALS
     open("adminsdkkey.json","w") do f 
         write(f, parsedjson) 
     end
-    CREDENTIALS = JSONCredentials("adminsdkkey.json")
+    _set_credentials!(JSONCredentials("adminsdkkey.json"))
     println("Project Admin SDK key is adminsdkkey.json now!!")
     println(CREDENTIALS)
 end
@@ -70,22 +92,19 @@ client_email: ****
 ````
 """
 function init(julianparseddict::Dict)
-    global CREDENTIALS
     # credentials need to be in a Dict{Symbol, <:AbstractString} for GoogleCloud.jl
-    CREDENTIALS = JSONCredentials(
+    _set_credentials!(JSONCredentials(
         Dict(Symbol(k) => string(v) for (k, v) in julianparseddict)
-    )
+    ))
 end
 
 function init(filepath)
-    global CREDENTIALS
-    CREDENTIALS = JSONCredentials(filepath)
+    _set_credentials!(JSONCredentials(filepath))
     println("Project Admin SDK key is ", filepath, " now!!")
     println(CREDENTIALS)
 end
 
 function init()
-    global CREDENTIALS
     try
         filenames = glob("*.json", "firebase")
         menu = RadioMenu(filenames, pagesize=4)
@@ -93,7 +112,7 @@ function init()
         
         if file != -1
             println("Project Admin SDK key is ", filenames[file], " now!!")
-            CREDENTIALS = JSONCredentials(filenames[file])
+            _set_credentials!(JSONCredentials(filenames[file]))
         else
             println("Menu canceled.")
         end
@@ -113,11 +132,21 @@ function projectid()
     CREDENTIALS.project_id
 end
 
+"""
+    get_token()
+
+Return an OAuth access token for the loaded service account. The token is cached
+and reused until shortly before it expires, so repeated calls are cheap.
+"""
 function get_token()
-    global CREDENTIALS
-    isnothing(CREDENTIALS) && throw("Run Firebase.init() to load credentials first")
-    session = GoogleSession(CREDENTIALS, ["datastore"])
-    GoogleCloud.authorize(session)
+    global SESSION
+    lock(SESSION_LOCK) do
+        isnothing(CREDENTIALS) && throw("Run Firebase.init() to load credentials first")
+        if isnothing(SESSION)
+            SESSION = GoogleSession(CREDENTIALS, OAUTH_SCOPES)
+        end
+        GoogleCloud.authorize(SESSION)
+    end
 end
 
 function auth_header()
@@ -126,7 +155,6 @@ function auth_header()
     if emulator_active(:firestore) || emulator_active(:storage)
         return "Authorization" => "Bearer owner"
     end
-    println(CREDENTIALS)
     token = get_token()
     "Authorization" => "$(token[:token_type]) $(token[:access_token])"
 end

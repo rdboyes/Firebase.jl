@@ -8,6 +8,7 @@ include("emulator_process.jl")
     # Pure unit tests — always run, no network or credentials required.
     include("emulator.jl")
     include("cloudstorage.jl")
+    include("token.jl")
 
     # Integration tests against an emulator. If one is already running we reuse it;
     # otherwise we try to start the Firebase Emulator Suite ourselves and shut it
